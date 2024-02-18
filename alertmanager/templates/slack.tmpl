@@ -1,0 +1,15 @@
+{{ define "slack.default.title" }}
+[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.alertname }}
+{{ end }}
+
+{{ define "slack.default.text" }}
+{{ range .Alerts }}
+{{ if eq .Labels.severity "critical" }}🔴{{ else if eq .Labels.severity "warning" }}🟡{{ else }}🔵{{ end }} *{{ .Labels.alertname }}*
+*Cluster:* `{{ .Labels.cluster }}`
+*Namespace:* `{{ .Labels.namespace }}`
+*Service:* `{{ .Labels.service }}`
+*Summary:* {{ .Annotations.summary }}
+{{ if .Annotations.runbook_url }}📖 <{{ .Annotations.runbook_url }}|Runbook>{{ end }}
+---
+{{ end }}
+{{ end }}
