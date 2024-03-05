@@ -1,0 +1,55 @@
+groups:
+  - name: slo.availability
+    rules:
+      # 99.9% availability SLO - critical burn rate
+      - alert: AvailabilitySLOBurnRateCritical
+        expr: |
+          (
+            1 - (
+              sum(rate(http_requests_total{code!~"5.."}[5m])) by (service, cluster)
+              /
+              sum(rate(http_requests_total[5m])) by (service, cluster)
+            )
+          ) > (14.4 * 0.001)
+          and
+          (
+            1 - (
+              sum(rate(http_requests_total{code!~"5.."}[1h])) by (service, cluster)
+              /
+              sum(rate(http_requests_total[1h])) by (service, cluster)
+            )
+          ) > (14.4 * 0.001)
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "Critical error rate for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} in {{ $labels.cluster }} burning availability budget at >14.4x rate"
+          runbook_url: "https://wiki.internal/runbooks/availability-slo"
+
+      - alert: AvailabilitySLOBurnRateWarning
+        expr: |
+          (
+            1 - (
+              sum(rate(http_requests_total{code!~"5.."}[30m])) by (service, cluster)
+              /
+              sum(rate(http_requests_total[30m])) by (service, cluster)
+            )
+          ) > (6 * 0.001)
+          and
+          (
+            1 - (
+              sum(rate(http_requests_total{code!~"5.."}[6h])) by (service, cluster)
+              /
+              sum(rate(http_requests_total[6h])) by (service, cluster)
+            )
+          ) > (6 * 0.001)
+        for: 5m
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "Elevated error rate for {{ $labels.service }}"
+          description: "Error rate burn at >6x for {{ $labels.service }} over 30m/6h windows"
+          runbook_url: "https://wiki.internal/runbooks/availability-slo"

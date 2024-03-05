@@ -1,0 +1,67 @@
+groups:
+  - name: slo.latency
+    rules:
+      # Multi-window burn rate for latency SLO
+      # Target: 99% of requests < 500ms
+      - alert: LatencySLOBurnRateCritical
+        expr: |
+          (
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{le="0.5"}[5m])) by (service, cluster)
+              /
+              sum(rate(http_request_duration_seconds_count[5m])) by (service, cluster)
+            )
+          ) > (14.4 * 0.01)
+          and
+          (
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{le="0.5"}[1h])) by (service, cluster)
+              /
+              sum(rate(http_request_duration_seconds_count[1h])) by (service, cluster)
+            )
+          ) > (14.4 * 0.01)
+        for: 2m
+        labels:
+          severity: critical
+          slo: latency
+        annotations:
+          summary: "High latency burn rate for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} in cluster {{ $labels.cluster }} is burning through latency error budget at >14.4x rate"
+          runbook_url: "https://wiki.internal/runbooks/latency-slo"
+
+      - alert: LatencySLOBurnRateWarning
+        expr: |
+          (
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{le="0.5"}[30m])) by (service, cluster)
+              /
+              sum(rate(http_request_duration_seconds_count[30m])) by (service, cluster)
+            )
+          ) > (6 * 0.01)
+          and
+          (
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{le="0.5"}[6h])) by (service, cluster)
+              /
+              sum(rate(http_request_duration_seconds_count[6h])) by (service, cluster)
+            )
+          ) > (6 * 0.01)
+        for: 5m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "Elevated latency burn rate for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} burning latency budget at >6x rate over 30m/6h windows"
+          runbook_url: "https://wiki.internal/runbooks/latency-slo"
+
+      # P99 latency threshold
+      - alert: HighP99Latency
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, cluster)) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P99 latency above 2s for {{ $labels.service }}"
+          description: "99th percentile latency is {{ $value | humanizeDuration }} in cluster {{ $labels.cluster }}"
