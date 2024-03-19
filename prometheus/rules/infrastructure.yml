@@ -1,0 +1,37 @@
+groups:
+  - name: infrastructure
+    rules:
+      - alert: NodeHighCPU
+        expr: 100 - (avg by(instance, cluster) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }} in {{ $labels.cluster }}"
+
+      - alert: NodeHighMemory
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }}"
+
+      - alert: DiskSpaceLow
+        expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}:{{ $labels.mountpoint }}"
+
+      - alert: DiskSpaceCritical
+        expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes) * 100 > 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space critical on {{ $labels.instance }}:{{ $labels.mountpoint }}"
+          runbook_url: "https://wiki.internal/runbooks/disk-space"
