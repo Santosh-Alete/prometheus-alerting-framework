@@ -1,0 +1,44 @@
+groups:
+  - name: slo.recording
+    interval: 30s
+    rules:
+      # Pre-aggregate request rates by service
+      - record: service:http_requests_total:rate5m
+        expr: sum(rate(http_requests_total[5m])) by (service, cluster)
+
+      - record: service:http_requests_errors:rate5m
+        expr: sum(rate(http_requests_total{code=~"5.."}[5m])) by (service, cluster)
+
+      # Error ratio
+      - record: service:http_error_ratio:rate5m
+        expr: |
+          service:http_requests_errors:rate5m / service:http_requests_total:rate5m
+
+      # Latency quantiles
+      - record: service:http_latency:p50
+        expr: histogram_quantile(0.5, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, cluster))
+
+      - record: service:http_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, cluster))
+
+      - record: service:http_latency:p99
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, cluster))
+
+      # Availability over sliding windows
+      - record: service:availability:ratio_rate1h
+        expr: |
+          sum(rate(http_requests_total{code!~"5.."}[1h])) by (service, cluster)
+          /
+          sum(rate(http_requests_total[1h])) by (service, cluster)
+
+      - record: service:availability:ratio_rate6h
+        expr: |
+          sum(rate(http_requests_total{code!~"5.."}[6h])) by (service, cluster)
+          /
+          sum(rate(http_requests_total[6h])) by (service, cluster)
+
+      - record: service:availability:ratio_rate24h
+        expr: |
+          sum(rate(http_requests_total{code!~"5.."}[24h])) by (service, cluster)
+          /
+          sum(rate(http_requests_total[24h])) by (service, cluster)

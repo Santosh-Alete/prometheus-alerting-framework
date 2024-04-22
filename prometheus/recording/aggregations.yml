@@ -1,0 +1,26 @@
+groups:
+  - name: node.aggregations
+    interval: 60s
+    rules:
+      - record: cluster:node_cpu:ratio
+        expr: avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (cluster)
+
+      - record: cluster:node_memory:ratio
+        expr: |
+          1 - avg(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) by (cluster)
+
+      - record: cluster:node_disk:ratio
+        expr: |
+          1 - avg(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes) by (cluster)
+
+  - name: kubernetes.aggregations
+    interval: 60s
+    rules:
+      - record: cluster:pod_count:total
+        expr: count(kube_pod_info) by (cluster, namespace)
+
+      - record: cluster:container_cpu:usage
+        expr: sum(rate(container_cpu_usage_seconds_total[5m])) by (cluster, namespace)
+
+      - record: cluster:container_memory:usage
+        expr: sum(container_memory_working_set_bytes) by (cluster, namespace)
