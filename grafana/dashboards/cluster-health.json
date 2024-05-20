@@ -1,0 +1,54 @@
+{
+  "dashboard": {
+    "title": "Cluster Health",
+    "uid": "cluster-health",
+    "tags": ["infrastructure", "kubernetes"],
+    "refresh": "30s",
+    "templating": {
+      "list": [
+        {
+          "name": "cluster",
+          "type": "query",
+          "query": "label_values(up, cluster)",
+          "refresh": 2
+        }
+      ]
+    },
+    "panels": [
+      {
+        "title": "CPU Usage by Cluster",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+        "targets": [{"expr": "cluster:node_cpu:ratio{cluster=\"$cluster\"}", "legendFormat": "CPU"}],
+        "fieldConfig": {"defaults": {"unit": "percentunit", "max": 1}}
+      },
+      {
+        "title": "Memory Usage by Cluster",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+        "targets": [{"expr": "cluster:node_memory:ratio{cluster=\"$cluster\"}", "legendFormat": "Memory"}],
+        "fieldConfig": {"defaults": {"unit": "percentunit", "max": 1}}
+      },
+      {
+        "title": "Disk Usage by Cluster",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0},
+        "targets": [{"expr": "cluster:node_disk:ratio{cluster=\"$cluster\"}", "legendFormat": "Disk"}],
+        "fieldConfig": {"defaults": {"unit": "percentunit", "max": 1}}
+      },
+      {
+        "title": "Pod Count by Namespace",
+        "type": "bargauge",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+        "targets": [{"expr": "cluster:pod_count:total{cluster=\"$cluster\"}", "legendFormat": "{{namespace}}"}]
+      },
+      {
+        "title": "Container CPU by Namespace",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+        "targets": [{"expr": "cluster:container_cpu:usage{cluster=\"$cluster\"}", "legendFormat": "{{namespace}}"}],
+        "fieldConfig": {"defaults": {"unit": "short"}}
+      }
+    ]
+  }
+}
