@@ -1,0 +1,21 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
+
+jobs:
+  security:
+    uses: Santosh-Alete/github-reusable-workflows/.github/workflows/sast-dast-scan.yml@main
+    with:
+      language: python
+      sast_enabled: true
+      dependency_scan: true
+      secret_scan: true
